@@ -5,6 +5,8 @@ defmodule ReverseProxyPlug do
 
   alias Plug.Conn
 
+  require Logger
+
   @behaviour Plug
   @http_client HTTPoison
   @http_methods ["GET", "HEAD", "POST", "PUT", "DELETE", "CONNECT", "OPTIONS", "TRACE", "PATCH"]
@@ -92,6 +94,12 @@ defmodule ReverseProxyPlug do
   def request(conn, body, opts) do
     {method, url, headers, client_options} = prepare_request(conn, opts)
 
+    Logger.debug(
+      "Reverse proxy plug prepare request #{inspect(url)} #{inspect(headers)} #{inspect(method)} #{
+        inspect(client_options)
+      }"
+    )
+
     opts[:client].request(%HTTPoison.Request{
       method: method,
       url: url,
@@ -102,10 +110,13 @@ defmodule ReverseProxyPlug do
   end
 
   def response({:ok, resp}, conn, opts) do
+    Logger.debug("Reverse proxy plug response ok #{inspect(resp)}")
+
     process_response(opts[:response_mode], conn, resp, opts)
   end
 
   def response(error, conn, opts) do
+    Logger.debug("Reverse proxy plug response error #{inspect(error)}")
     error_callback = opts[:error_callback]
 
     case error_callback do
